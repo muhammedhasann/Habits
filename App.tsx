@@ -15,6 +15,7 @@ import ReviewModule from './components/ReviewModule';
 import DailyBriefingModal from './components/DailyBriefingModal';
 import Login from './components/Login';
 import { isAuthenticated } from './services/authService';
+import { getUserData, saveUserData } from './services/integrationService';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -26,30 +27,32 @@ const App: React.FC = () => {
     setIsLoggedIn(auth);
     
     if (auth) {
-      // Strict check for daily plan
-      const log = localStorage.getItem(`log-${today}`);
+      // Strict check for daily plan using new data service
+      const log = getUserData<any>(`log-${today}`);
       if (!log) {
           setShowBriefing(true);
       } else {
-          const parsed = JSON.parse(log);
-          if (!parsed.plan) setShowBriefing(true);
+          if (!log.plan) setShowBriefing(true);
       }
     }
-  }, [today]);
+  }, [today, isLoggedIn]);
 
   const handleBriefingComplete = (plan: { mit: string; top3: string[] }) => {
-      const saved = localStorage.getItem(`log-${today}`);
-      const current = saved ? JSON.parse(saved) : { date: today, completedHabitIds: [] };
+      const current = getUserData<any>(`log-${today}`) || { date: today, completedHabitIds: [] };
       
       current.plan = { ...plan, quote: "Action expresses priorities." };
-      localStorage.setItem(`log-${today}`, JSON.stringify(current));
+      saveUserData(`log-${today}`, current);
       setShowBriefing(false);
-      // We force a reload to ensure all components pick up the new plan state immediately
-      window.location.reload(); 
+      // Force update
+      window.location.href = '/#/';
+  };
+
+  const handleLoginSuccess = () => {
+      setIsLoggedIn(true);
   };
 
   if (!isLoggedIn) {
-      return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+      return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (

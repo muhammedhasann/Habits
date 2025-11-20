@@ -66,8 +66,10 @@ export interface AudioContextType {
 // --- NEW TYPES FOR V2.0 ---
 
 export interface UserProfile {
+  id: string; // Unique ID
   name: string;
   email: string;
+  password?: string; // Stored for simulation
   avatar?: string;
   chronotype: 'Lark' | 'Owl' | 'Third Bird';
   mainGoal: string; // e.g., "Productivity", "Health", "Learning"

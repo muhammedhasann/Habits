@@ -4,7 +4,7 @@ import { DAILY_PROTOCOL } from '../constants';
 import { Habit, HabitSuggestion } from '../types';
 import { CheckCircle2, Flame, Plus, PlayCircle, Sparkles, RefreshCw, Target, Star, Pin, Quote } from 'lucide-react';
 import { suggestNewHabits } from '../services/geminiService';
-import { addXP, getUserProfile } from '../services/integrationService';
+import { addXP, getUserProfile, getUserData, saveUserData } from '../services/integrationService';
 import ConfirmationModal from './ConfirmationModal';
 import VideoModal from './VideoModal';
 
@@ -26,12 +26,14 @@ const HabitTracker: React.FC = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem(`log-${today}`);
+    const saved = getUserData<any>(`log-${today}`);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setCompleted(parsed.completedHabitIds || []);
-      if (parsed.plan) setPlan(parsed.plan);
+      setCompleted(saved.completedHabitIds || []);
+      if (saved.plan) setPlan(saved.plan);
     }
+    const savedCustom = getUserData<Habit[]>('custom-habits');
+    if(savedCustom) setCustomHabits(savedCustom);
+
     calculateStreak();
   }, [today]);
 
@@ -41,10 +43,9 @@ const HabitTracker: React.FC = () => {
     
     for (let i = 0; i < 365; i++) {
         const dateStr = d.toISOString().split('T')[0];
-        const log = localStorage.getItem(`log-${dateStr}`);
+        const log = getUserData<any>(`log-${dateStr}`);
         if (log) {
-            const parsed = JSON.parse(log);
-            const count = parsed.completedHabitIds?.length || 0;
+            const count = log.completedHabitIds?.length || 0;
             if (count >= 5) {
                 currentStreak++;
             } else if (i > 0) {
@@ -82,10 +83,9 @@ const HabitTracker: React.FC = () => {
   };
 
   const updateStorage = (newCompleted: string[]) => {
-    const saved = localStorage.getItem(`log-${today}`);
-    const current = saved ? JSON.parse(saved) : { date: today };
+    const current = getUserData<any>(`log-${today}`) || { date: today };
     current.completedHabitIds = newCompleted;
-    localStorage.setItem(`log-${today}`, JSON.stringify(current));
+    saveUserData(`log-${today}`, current);
   };
 
   const triggerXpAnim = (amount: number) => {
@@ -114,7 +114,10 @@ const HabitTracker: React.FC = () => {
           time: 'Any',
           videoId: sug.videoId
       };
-      setCustomHabits([...customHabits, newHabit]);
+      const updatedCustom = [...customHabits, newHabit];
+      setCustomHabits(updatedCustom);
+      saveUserData('custom-habits', updatedCustom);
+
       setSuggestions(suggestions.filter(s => s.title !== sug.title));
       triggerXpAnim(20); 
   };
@@ -193,7 +196,7 @@ const HabitTracker: React.FC = () => {
         </div>
       </div>
 
-      {/* Pinned Plan HUD - THE REQUESTED SECTION */}
+      {/* Pinned Plan HUD */}
       {plan && (
          <div className="bg-[#050507] border border-neon-cyan/30 rounded-3xl relative overflow-hidden shadow-[0_0_30px_rgba(0,243,255,0.05)] group animate-in fade-in slide-in-from-top-4">
             

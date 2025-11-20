@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Save, Sparkles, PlayCircle, Smile, Frown, Meh, Zap, Brain, Calendar, Tag, Bot, Activity } from 'lucide-react';
 import { analyzeJournalEntry, transcribeAudio, generateSpeech, decodeAudioData } from '../services/geminiService';
+import { getUserData, saveUserData } from '../services/integrationService';
 import { DailyStats } from '../types';
 
 const MOODS = [
@@ -24,12 +25,11 @@ const SmartJournal: React.FC = () => {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    const savedLog = localStorage.getItem(`log-${today}`);
+    const savedLog = getUserData<any>(`log-${today}`);
     if (savedLog) {
-        const parsed = JSON.parse(savedLog);
-        if (parsed.journalEntry) setEntry(parsed.journalEntry);
-        if (parsed.stats) setStats(parsed.stats);
-        if (parsed.stats?.selectedMood) setSelectedMood(parsed.stats.selectedMood);
+        if (savedLog.journalEntry) setEntry(savedLog.journalEntry);
+        if (savedLog.stats) setStats(savedLog.stats);
+        if (savedLog.stats?.selectedMood) setSelectedMood(savedLog.stats.selectedMood);
     }
 
     const hist = [];
@@ -37,11 +37,10 @@ const SmartJournal: React.FC = () => {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
-        const item = localStorage.getItem(`log-${dateStr}`);
+        const item = getUserData<any>(`log-${dateStr}`);
         if (item) {
-            const p = JSON.parse(item);
-            if (p.journalEntry || p.stats) {
-                hist.push({ date: dateStr, ...p });
+            if (item.journalEntry || item.stats) {
+                hist.push({ date: dateStr, ...item });
             }
         }
     }
@@ -91,11 +90,10 @@ const SmartJournal: React.FC = () => {
 
       setStats(result);
       
-      const savedLog = localStorage.getItem(`log-${today}`);
-      const currentLog = savedLog ? JSON.parse(savedLog) : { date: today, completedHabitIds: [] };
+      const currentLog = getUserData<any>(`log-${today}`) || { date: today, completedHabitIds: [] };
       currentLog.journalEntry = entry;
       currentLog.stats = result;
-      localStorage.setItem(`log-${today}`, JSON.stringify(currentLog));
+      saveUserData(`log-${today}`, currentLog);
       
       setIsAnalyzing(false);
   };
