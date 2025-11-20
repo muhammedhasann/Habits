@@ -1,0 +1,7 @@
+{
+  "name": "NeuroFlow",
+  "description": "A futuristic, AI-enhanced productivity tracker and daily protocol manager combining habit tracking with state-of-the-art Gemini intelligence.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
